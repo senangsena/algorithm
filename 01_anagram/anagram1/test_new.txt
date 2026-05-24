@@ -1,0 +1,11 @@
+{'aaabiiklnnost': 'balkanisation'}
+{'aaabiiklnnotz': 'balkanization'}
+{'aaabiillptty': 'palatability'}
+{'aaabiinnnorssttttu': 'transubstantiation'}
+{'aaabillnssuy': 'unassailably'}
+{'aaabiln': 'albania'}
+{'aaabilnn': 'albanian'}
+{'aaabilnns': 'albanians'}
+{'aaabilnnttuy': 'unattainably'}
+{'aaabilrstv': 'bratislava'}
+{'aaabimnpst': 'anabaptism'}
