@@ -6,7 +6,6 @@ import random, sys, time
 #                                                                         #
 # Please do not use Python's dictionary or Python's collections library.  #
 # The goal is to implement the data structure yourself.   
-# 
 # ｂucket.sizeを37にすると97の時の2倍遅くなった。
 # bucket.sizeを197にすると97の時の2倍速くなった.
 # 97の時、i = 23, 30, 33において900秒を超える実行時間になった（なぜ？） 
