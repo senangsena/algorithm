@@ -5,7 +5,12 @@ import random, sys, time
 # Implement a hash table from scratch!  (STEP w2 hw1)                                  #
 #                                                                         #
 # Please do not use Python's dictionary or Python's collections library.  #
-# The goal is to implement the data structure yourself.                   #
+# The goal is to implement the data structure yourself.   
+# 
+# ｂucket.sizeを37にすると97の時の2倍遅くなった。
+# bucket.sizeを197にすると97の時の2倍速くなった.
+# 97の時、i = 23, 30, 33において900秒を超える実行時間になった（なぜ？） 
+# O(n / 6)くらい。再ハッシュは未実装               #
 #                                                                         #
 ###########################################################################
 
@@ -22,11 +27,11 @@ def calculate_hash(key):
         # "alice"と"elica"のように順番変わっているものを区別するため、
         # 何番目の文字かによってハッシュ値を変える
         if i % 3 == 0:
-            hash += 7 * i * (ord(char) - 90)
+            hash += i * (ord(char) - 90) 
         elif i % 3 == 1:
-            hash += 5 * i * (ord(char) - 90)
+            hash += 5 * i * (ord(char) - 90) + i
         else:
-            hash -= 3 * i * (ord(char) - 90)
+            hash -= 3 * i * (ord(char) - 90) + i
         
     
     return hash
@@ -58,7 +63,7 @@ class HashTable:
     def __init__(self):
         # Set the initial bucket size to 97. A prime number is chosen to reduce
         # hash conflicts.
-        self.bucket_size = 97
+        self.bucket_size = 197
         self.buckets = [None] * self.bucket_size
         self.item_count = 0 
 
