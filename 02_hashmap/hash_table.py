@@ -156,20 +156,21 @@ class HashTable:
                 return False  
         else:
             # 削除する際は、cur_itemの一個前のItem情報も必要。
+            # 先頭のItemがlast_item, ２番目の要素がcur_itemになるようにする。
+            tmp = cur_item
+            cur_item = cur_item.next
+            last_item = tmp
+        
+            while(cur_item.next != None): # 結合リストの最後まで探す
+                if cur_item.key == key: # cur_itemを常に調べる
+                    last_item.next = cur_item.next # 削除したいものを飛ばす形で結合をし直す
+                else:
+                    cur_item = cur_item.next
+                    last_item = last_item.next
 
-            if cur_item.key == key: # リストの先頭が削除の対象の時
-                self.buckets[hash_per_size] = cur_item.next
-                
-            else:
-                while(cur_item.next.next != None): # 結合リストの最後まで探す
-                    if cur_item.next.key == key: # cur_itemの次のItemを常に調べる
-                        cur_item.next = cur_item.next.next # 削除したいものを飛ばす形で結合をし直す
-                    else:
-                        cur_item = cur_item.next
-
-                if cur_item.next.next == None:
-                    if cur_item.next.key == key: #結合リスト末尾のキーを削除するとき、その前のItemのnextをNoneにする。
-                        cur_item.next = None    
+            if cur_item.next == None:
+                if cur_item.key == key: #結合リスト末尾のキーを削除するとき、その前のItemのnextをNoneにする。
+                    last_item.next = None    
 
         self.item_count -= 1
         return True
