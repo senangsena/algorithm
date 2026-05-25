@@ -18,6 +18,7 @@ def calculate_hash(key):
     for i, char in enumerate(key): 
         hash += ord(char)  # iをunicodeに変換
         # "alice"と"elica"のように順番変わっているものを区別するため、
+        
         # 何番目の文字かによってハッシュ値を変える
         if i % 3 == 0:
             hash += 7 * i * (ord(char) - 90)
