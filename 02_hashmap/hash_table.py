@@ -6,10 +6,8 @@ import random, sys, time
 #                                                                         #
 # Please do not use Python's dictionary or Python's collections library.  #
 # The goal is to implement the data structure yourself.   
-# ｂucket.sizeを37にすると97の時の2倍遅くなった。
-# bucket.sizeを197にすると97の時の2倍速くなった.
-# 97の時、i = 23, 30, 33において900秒を超える実行時間になった（なぜ？） 
-# O(n / 6)くらい。再ハッシュは未実装              
+# ハッシュ値は大きければ大きいほど速い
+# 再ハッシュは未実装
 #                                                                         #
 ###########################################################################
 
@@ -28,13 +26,40 @@ def calculate_hash(key):
         if i % 3 == 0:
             hash += i * (ord(char) - 90) 
         elif i % 3 == 1:
-            hash += 5 * i * (ord(char) - 90) + i
+            hash += 5 * i * (ord(char) - 90) - i
         else:
             hash -= 3 * i * (ord(char) - 90) + i
         
     
     return hash
 
+#hsize = 197 # ハッシュテーブルの大きさを入れる変数。再ハッシュするごとに更新される。本当はHashTableクラス内の定義をself.bucket_size = sizeのように変数にしたかったがうまくいかなかったので別で定義する
+
+# 再ハッシュの必要あるかを確かめ、必要に応じて再ハッシュする
+def re_hash(ht):
+    if ht.bucket_size * 0.7 < ht.item_count: # ハッシュテーブルに入っているアイテムの個数が、テーブルサイズの7割を超えたら、大きくする。
+        
+        ht2 = HashTable()
+        ht2.bucket_size = ht.bucket_size * 2 + 1 
+        ht2.buckets = [None] * ht2.bucket_size
+
+        print(ht2.bucket_size)
+
+        for item in ht.buckets: # 各枠内にあるItemを先頭から探す→その結合リストを探す
+            print("start new item")
+            cur_item = item
+            while(cur_item != None):
+                ht2.put(cur_item.key, cur_item.value)
+                cur_item = cur_item.next
+                print(cur_item == None)
+
+        ht_item = ht.buckets
+        
+        for item in ht_item:
+            cur_item = item
+            while(cur_item != None):
+                ht.delete(cur_item.key)
+                cur_item = cur_item.next
 
 # An item object that represents one key - value pair in the hash table.
 class Item:
@@ -62,7 +87,7 @@ class HashTable:
     def __init__(self):
         # Set the initial bucket size to 97. A prime number is chosen to reduce
         # hash conflicts.
-        self.bucket_size = 197
+        self.bucket_size = 19997 # ハッシュテーブルの初期値
         self.buckets = [None] * self.bucket_size
         self.item_count = 0 
 
@@ -99,6 +124,8 @@ class HashTable:
             cur_item.next = Item(key, value, None)
 
         self.item_count += 1
+
+        #re_hash(self) #再ハッシュの必要があるか確かめる。
         #------------------------#
         return True
 
