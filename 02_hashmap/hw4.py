@@ -4,7 +4,8 @@ import hash_table # Use the hash table you implemented in Homework #2
 ###########################################################################
 #                                                                         #
 # Implement a cache that stores the most recently accessed items from     #
-# scratch!                                                                #
+# scratch!     
+# 一旦、ハッシュテーブル使わずにO(n)で実装してみる.                                                        #
 #                                                                         #
 # Please do not use Python's dictionary or Python's collections library.  #
 # The goal is to implement the data structure yourself.                   #
@@ -33,6 +34,8 @@ class Cache:
         self.miss_count = 0 # Increment on a cache miss
         #------------------------#
         # Write your code here!  #
+        self.first_page = None # もっとも最近アクセスされたページ
+        self.page_num = 0 # 今入っているページの数
         #------------------------#
         pass
 
@@ -43,6 +46,73 @@ class Cache:
     def access_page(self, url, contents):
         #------------------------#
         # Write your code here!  #
+
+        # まずはすでにキャッシュの中に入っているかを調べる。
+        cur_page = self.first_page
+        find = False
+        while(cur_page):
+            if cur_page.url == url: # url見つかったら、それを先頭に持ってくる
+                # もうすでに先頭にある時、何もしない
+                if cur_page == self.first_page:
+                    find = True
+                    break
+                else: #そうでない時、page.prevがNoneでない時、そのpageを先頭に持ってくる。
+                    # print(f"first page = {self.first_page.url}, pages = {self.get_pages()}")
+                    # print(f"cur_page.prev = {cur_page.prev.url}, cur = {cur_page.url}")
+
+                    prev_page = cur_page.prev 
+                    next_page = cur_page.next
+                    first_page = self.first_page 
+                    prev_page.next = next_page # 途切れた部分を繋ぎ直す
+                    if(next_page):
+                        next_page.prev = prev_page # これがなかったのが途中うまくいかなかった原因
+                    cur_page.prev = None
+                    cur_page.next = first_page # 元々のfirst_pageは、２番目になる
+                    first_page.prev = cur_page
+                    self.first_page = cur_page
+                    # print(f"[after]first page = {self.first_page.url}, pages = {self.get_pages()}")
+
+    
+                    self.hit_count += 1
+                    find = True
+                    break
+            cur_page = cur_page.next
+        
+        if not find: #キャッシュの中になかったとき、先頭に付け加える
+            new_page = Page(url, contents) # 新しくPageインスタンスを作成
+            
+            if self.first_page == None: #空の時
+                self.first_page = new_page
+                self.page_num += 1
+            else:
+
+                old_new = self.first_page
+                new_page.next = old_new #new -- oldnewを繋ぐ
+                old_new.prev = new_page
+                self.first_page = new_page # 先頭を書き換え
+
+
+                if self.page_num == self.limit: #キャッシュに限界まで入っている時、末端を消す。
+                    last_page = self.first_page    
+
+                    while(last_page.next != None): ## pageを末端まで進めて削除. Pageそのものを削除する方法がわからず、Noneにすることで削除を表している
+                        last_page = last_page.next
+                        
+
+                    
+                    prev = last_page.prev
+                   
+                    prev.next = None
+                    last_page = None
+
+                    
+
+
+                else: # そうでない時、Page数を更新するだけ
+                    self.page_num += 1
+
+            self.miss_count += 1
+
         #------------------------#
         pass
 
@@ -51,6 +121,14 @@ class Cache:
     def get_pages(self):
         #------------------------#
         # Write your code here!  #
+
+        urls = []
+        cur_page = self.first_page
+        while(cur_page != None): #削除したものがNoneになって出力されるのでそれは含めない（例：['e.com', 'a.com', 'c.com', 'd.com', None]）
+            urls.append(cur_page.url)
+            cur_page = cur_page.next
+        
+        return urls
         #------------------------#
         pass
 
@@ -141,7 +219,7 @@ def cache_test():
 
 def performance_test():
     # Set the size of the cache to 100.
-    cache = Cache(100)
+    cache = Cache(150)
 
     # Generate queries based on the Zipf law.
     ALPHA = 1.5

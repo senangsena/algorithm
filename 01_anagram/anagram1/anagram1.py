@@ -18,10 +18,6 @@ print(new_dictionary)
 print(new_dictionary_orig)
 
 
-# print(word_sort("daceb"))
-# print(dictionary)
-#print(make_sorted_dict(dictionary))
-
 #main
 print("Input word:")
 input = input()
@@ -48,31 +44,27 @@ while(not find):
         if target[i] < sorted_input[i]:
             start = target_i + 1
             target_i = int((start + end) / 2)
-            print(f"start = {start}, end = {end}, tar = {target}")
             break # forから出る
 
         elif target[i] > sorted_input[i]:
             end = target_i - 1
             target_i = int((start + end) / 2)
-            print(2)
             break
         elif i == min(len(target), len_input) - 1:
             if len(target) == len_input:
-                print(3)
                 answer = new_dictionary_orig[target_i]
                 find = True
             elif len(target) < len_input: # inputはtargetより後ろ   
                 start = target_i + 1
                 target_i = int((start + end) / 2)
-                print(4)
                 break
             else:
                 end = target_i - 1
                 target_i = int((start + end) / 2)
 
-                print(5)
                 break
     
+# 見つかった単語の前後も見る。（複数ある可能性があるため）
 
 
 print(answer)

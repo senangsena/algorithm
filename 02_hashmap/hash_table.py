@@ -7,7 +7,8 @@ import random, sys, time
 # Please do not use Python's dictionary or Python's collections library.  #
 # The goal is to implement the data structure yourself.   
 # ハッシュ値は大きければ大きいほど速い
-# 再ハッシュは未実装
+# 再ハッシュ実装済み
+# 
 #                                                                         #
 ###########################################################################
 
@@ -20,9 +21,13 @@ def calculate_hash(key):
     # Note: This is not a good hash function. Make it better!
     hash = 0
     for i, char in enumerate(key): 
-        hash += ord(char)  # iをunicodeに変換
+        hash += ord(char)  # iをunicodeに変換して足す
         # "alice"と"elica"のように順番変わっているものを区別するため、
-        # 何番目の文字かによってハッシュ値を変える
+        # 何番目の文字かによってハッシュ値を変えたい。追加でiに由来する値を足す
+        # 初めはiのmodを取らずにhash += i * (ord(char) - 90)で統一していたが、試しにabcのアナグラムで試したところ同じ数になるペアがあった。
+        # そこでmodをとってみようと思い、3で割ったあまりで場合分けをし、足す中身を変えた。
+        # 90を引く理由は、ord(char)は大体100辺りで、全てたすと数が大きくなってしまう。ハッシュ値は大きくしたいのではなくばらけさせるのが目的のため90との差を取ることで大きくなりすぎないようにした
+        # iの係数（1, 5, 3)や+=, -=の違いも、何回か組み合わせを試して最も速くなったものに決定した。
         if i % 3 == 0:
             hash += i * (ord(char) - 90) 
         elif i % 3 == 1:
@@ -35,31 +40,6 @@ def calculate_hash(key):
 
 #hsize = 197 # ハッシュテーブルの大きさを入れる変数。再ハッシュするごとに更新される。本当はHashTableクラス内の定義をself.bucket_size = sizeのように変数にしたかったがうまくいかなかったので別で定義する
 
-# 再ハッシュの必要あるかを確かめ、必要に応じて再ハッシュする
-def re_hash(ht):
-    if ht.bucket_size * 0.7 < ht.item_count: # ハッシュテーブルに入っているアイテムの個数が、テーブルサイズの7割を超えたら、大きくする。
-        
-        ht2 = HashTable()
-        ht2.bucket_size = ht.bucket_size * 2 + 1 
-        ht2.buckets = [None] * ht2.bucket_size
-
-        print(ht2.bucket_size)
-
-        for item in ht.buckets: # 各枠内にあるItemを先頭から探す→その結合リストを探す
-            print("start new item")
-            cur_item = item
-            while(cur_item != None):
-                ht2.put(cur_item.key, cur_item.value)
-                cur_item = cur_item.next
-                print(cur_item == None)
-
-        ht_item = ht.buckets
-        
-        for item in ht_item:
-            cur_item = item
-            while(cur_item != None):
-                ht.delete(cur_item.key)
-                cur_item = cur_item.next
 
 # An item object that represents one key - value pair in the hash table.
 class Item:
@@ -87,7 +67,7 @@ class HashTable:
     def __init__(self):
         # Set the initial bucket size to 97. A prime number is chosen to reduce
         # hash conflicts.
-        self.bucket_size = 19997 # ハッシュテーブルの初期値
+        self.bucket_size = 19997 # ハッシュテーブルのサイズの初期値
         self.buckets = [None] * self.bucket_size
         self.item_count = 0 
 
@@ -125,7 +105,9 @@ class HashTable:
 
         self.item_count += 1
 
-        #re_hash(self) #再ハッシュの必要があるか確かめる。
+        do_rehash = self.re_hash()
+        if(do_rehash): #再ハッシュの必要があるか確かめる。
+            self.buckets = do_rehash
         #------------------------#
         return True
 
@@ -140,7 +122,7 @@ class HashTable:
         #------------------------#
         # Write your code here!  #
         hash_value = calculate_hash(key) # ハッシュ値を計算
-        hash_per_size = hash_value % self.bucket_size ##このselfは、hash_tableのこと？HashTableのインスタンスが一つだけだからselfで書けるという認識で合っているか
+        hash_per_size = hash_value % self.bucket_size 
         
         cur_item = self.buckets[hash_per_size]
 
@@ -200,13 +182,66 @@ class HashTable:
                     last_item.next = None    
 
         self.item_count -= 1
+
+        do_rehash = self.re_hash()
+        if(do_rehash): #再ハッシュの必要があるか確かめる。
+            self.buckets = do_rehash
+
         return True
         #------------------------#
-        pass ##この意味
+        pass ##空の関数を作る用。消していい
 
     # Return the total number of items in the hash table.
     def size(self):
         return self.item_count
+    
+    def re_hash(self):
+        # 再ハッシュの必要あるかを確かめ、必要に応じて再ハッシュする
+        #　再ハッシュの必要がない時、Falseを、必要がある時、新しいリストを返す
+        rehash = False # 再ハッシュの必要性
+        if self.bucket_size * 0.7 < self.item_count: # ハッシュテーブルに入っているアイテムの個数が、テーブルサイズの7割を超えたら、大きくする。
+            self.bucket_size = self.bucket_size * 2 + 1
+             
+            rehash = True
+
+        # ハッシュテーブルに入っているアイテムの個数が、テーブルサイズの3割を下回ったら小さくする   
+        # Itemがあまり入っていない時から再ハッシュをかけると時間が大幅にかかるのでItemが1000個を超えている時のみ再ハッシュ対象にする。
+
+        elif self.item_count > 10000 and self.bucket_size * 0.3 > self.item_count: 
+            self.bucket_size = self.bucket_size // 2  
+            rehash = True
+
+        while(rehash):    
+            new_buckets = [None] * self.bucket_size
+
+            #print(ht2.bucket_size)
+
+            for item in self.buckets: # 各枠内にあるItemを先頭から探す→その結合リストを探す
+                #print("start new item")
+                cur_item = item # 今見てるItem
+
+                while(cur_item != None): 
+
+                    key = cur_item.key
+                    value = cur_item.value
+                    hash_value = calculate_hash(key) # 入れたいkeyのハッシュ値の計算
+                    hash_per_size = hash_value % self.bucket_size
+
+                    if new_buckets[hash_per_size] == None: # 入れたい枠が空の時はそのまま入れる
+                        new_buckets[hash_per_size] = Item(key, value, None)
+                        
+                    else: # もうすでに何かしらのデータ入っている時
+                        first_item = new_buckets[hash_per_size] # 先頭
+                        new_buckets[hash_per_size] = Item(key, value, first_item)
+                    
+                    cur_item = cur_item.next
+                        
+                    #print(cur_item == None)
+
+            return new_buckets
+            
+        return False
+    
 
 
 # Check that the hash table has a "reasonable" bucket size.
