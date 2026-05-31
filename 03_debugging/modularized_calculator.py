@@ -193,6 +193,25 @@ def calculate_one_function(tokens, index):
     # indexの返り値は計算結果を指す
     return tokens, index
 
+# トークン列の中の一つの掛け算もしくは割り算を行う
+def calculate_one_mul_div(tokens, index):
+    assert tokens[index - 1]['type'] == 'NUMBER'
+    assert tokens[index]['type'] in ['MUL', 'DIV']
+    assert tokens[index + 1]['type'] == 'NUMBER'
+
+    # token[index + 1]に結果を入れ、token[index - 1], token[index]を削除する
+    # 削除するとindexが一つズレることに注意
+    if tokens[index]['type'] == 'MUL':
+        tokens[index + 1]['number'] = tokens[index - 1]['number'] * tokens[index + 1]['number']
+    elif tokens[index]['type'] == 'DIV':
+        tokens[index + 1]['number'] = tokens[index - 1]['number'] / tokens[index + 1]['number']
+      
+    tokens.pop(index - 1)
+    tokens.pop(index - 1) # さっきまでのtokens[index]はtokens[index - 1]に
+    index -= 1
+
+    # indexの返り値は計算結果を指す
+    return tokens, index
             
 #　トークン列の演算を行う関数     
 def evaluate(tokens):
@@ -232,24 +251,12 @@ def evaluate(tokens):
         index = 0
 
         while index < len(tokens):
-            if tokens[index]['type'] == 'NUMBER':
-                if tokens[index - 1]['type'] == 'MUL':
+            if tokens[index]['type'] in ['MUL', 'DIV']:
 
-                    # token[index]に結果を入れ、token[index - 2], token[index - 1]を削除する
-                    # 削除するとindexが一つズレることに注意
-                    tokens[index]['number'] = tokens[index]['number'] * tokens[index - 2]['number']
-                    tokens.pop(index - 2)
-                    tokens.pop(index - 2) # さっきまでのtokens[index - 1]はtokens[index - 2]に
-                    index -= 2
+                # 見つかった掛け算・割り算を計算
+                tokens, index = calculate_one_mul_div(tokens, index)
 
-                elif tokens[index - 1]['type'] == 'DIV':
-
-                    # token[index]に結果を入れ、token[index - 2], token[index - 1]を削除する
-                    # 削除するとindexが一つズレることに注意
-                    tokens[index]['number'] = tokens[index - 2]['number'] / tokens[index]['number']
-                    tokens.pop(index - 2)
-                    tokens.pop(index - 2) # さっきまでのtokens[index - 1]はtokens[index - 2]に
-                    index -= 2
+          
             index += 1
         
         
@@ -312,17 +319,18 @@ def run_test():
         test("1.0+2.1-3") # 小数も読めるか
         test("3947-8.249")
 
+        # 空白あり
+        test("1 + 2")
+        test("1.0 + 2.154 - 3")
+
         print("==== plus_minus_test finished! ====")
         print()
         
 
-    # 空白あり
     def mul_div_test():
         print("==== mul_div_test started! ====")
 
-        test("1 + 2")
-        test("1.0 + 2.154 - 3")
-
+        
         # 掛け算割り算のみ
         test("1 * 2")
         test("5 / 9")
