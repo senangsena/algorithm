@@ -68,6 +68,8 @@ def evaluate_main(tokens):
     return answer
 ```
 ### モジュール化されている関数
+* calculate_one_mul_div(tokens, index)  
+    トークン列の中の、indexの指す掛け算もしくは割り算を計算する。これにより`evaluate_mul_div(tokens)`では、'type'が’MUL’か'DIV'のトークンを見つけるたびにこの関数を呼べばよくなる
 * make_brackets_tokens(tokens, index)  
     トークン列の中の、indexの指す開きカッコから始まる特定の括弧の中身を取り出したトークン列を返す  
     `1 + ( 2 + 3 ) -> 2 + 3`
