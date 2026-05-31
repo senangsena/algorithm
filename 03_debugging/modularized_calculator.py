@@ -1,12 +1,10 @@
-# モジュール化された演算プログラム。
+# モジュール化された演算プログラム。宿題1〜4すべて実装済み
 # 入力：str型の計算式　出力：計算結果
-# 宿題1...掛け算、割り算の実装
-# 宿題2...テストケースを加える
-# 宿題3...かっこに対応させる。
-# 宿題4...abs(), int(), round()にも対応させる
+# ✅宿題1...掛け算、割り算の実装
+# ✅宿題2...テストケースを加える
+# ✅宿題3...かっこに対応させる。
+# ✅宿題4...abs(), int(), round()にも対応させる
 
-
-# 関数(abs(), int(), round())を読む関数
 
 # 数字を読む関数
 def read_number(line, index):
@@ -35,10 +33,12 @@ def read_minus(line, index):
     token = {'type': 'MINUS'}
     return token, index + 1
 
+# "*"を読む関数
 def read_mul(line, index):
     token = {'type': 'MUL'}
     return token, index + 1
 
+# "/"を読む関数
 def read_div(line, index):
     token = {'type': 'DIV'}
     return token, index + 1
@@ -53,10 +53,18 @@ def read_brackets_end(line, index):
     token = {'type': 'BRACKETS_END'}
     return token, index + 1
 
+###ここからは関数を読む関数
 def read_abs(line, index):
-    token = {'type': 'FUNCTION'}
+    token = {'type': 'FUNCTION', 'function_type': 'ABS'}
+    return token, index + 3
  
+def read_int(line, index):
+    token = {'type': 'FUNCTION', 'function_type': 'INT'}
+    return token, index + 3
 
+def read_round(line, index):
+    token = {'type': 'FUNCTION', 'function_type': 'ROUND'}
+    return token, index + 5
 
 # 計算式をトークンのリスト化する関数
 def tokenize(line):
@@ -94,11 +102,18 @@ def tokenize(line):
         elif line[index] == ')':
             (token, index) = read_brackets_end(line, index)
 
-        # 
+        # "abs"
         elif line[index] == 'a' and line[index + 1] == 'b' and line[index + 2] == 's':
             (token, index) = read_abs(line, index)
-            pass 
+
+        # "int"   
+        elif line[index] == 'i' and line[index + 1] == 'n' and line[index + 2] == 't':
+            (token, index) = read_int(line, index)
         
+        # "round"
+        elif line[index] == 'r' and line[index + 1] == 'o' and line[index + 2] == 'u' and line[index + 3] == 'n' and line[index + 4] == 'd':
+            (token, index) = read_round(line, index)
+
         # その他
         else:
             print('Invalid character found: ' + line[index])
@@ -142,95 +157,140 @@ def calculate_one_brackets(tokens, index):
 
     # 括弧の中身を計算し、1トークンにまとめる
     # 現在indexが指すのは開き括弧。それを計算結果の数字で上書きする
-    tokens[index]['number'] = evaluate_main(brackets_tokens)
+    tokens[index]['number'] = evaluate(brackets_tokens)
     tokens[index]['type'] = 'NUMBER'
-
-    # indexが指す位置を開き括弧の次の位置に
-    index += 1
 
     # brackets_tokensと閉じ括弧を取り除く
     for i in range(brackets_len + 1): 
-        tokens.pop(index)
+        tokens.pop(index + 1)
 
-    
+    # indexの返り値は計算結果を指す
     return tokens, index
-            
-     
 
-### ここからはトークン列の演算を行う関数
-# 括弧の中身を計算する
-def evaluate_brackets(tokens):
+def calculate_one_function(tokens, index):
+    assert tokens[index]['type'] == 'FUNCTION'
+    assert tokens[index + 1]['type'] == 'BRACKETS_START'
+    function_type = tokens[index]['function_type']
 
-    index = 0
+    # 関数の引数の中身を計算
+    index += 1
+    tokens, index = calculate_one_brackets(tokens, index)
+    assert tokens[index]['type'] == 'NUMBER' # indexの返り値は、計算結果を指すはず
 
-    while index < len(tokens):
-        if tokens[index]['type'] == 'BRACKETS_START':
-            
-            # 見つかった括弧の中身を計算
-            tokens, index = calculate_one_brackets(tokens, index)
-            
-        index += 1
+    if function_type == 'ABS':
+        tokens[index]['number'] = abs(tokens[index]['number'])
+    elif function_type == 'INT':
+        tokens[index]['number'] = int(tokens[index]['number'])
+    elif function_type == 'ROUND':
+        tokens[index]['number'] = round(tokens[index]['number'])
+    else:
+        print("Unknown function type")
+        exit(1)
+
+    # 関数を示すトークンを削除
+    tokens.pop(index - 1)
     
+    # indexの返り値は計算結果を指す
+    return tokens, index
 
-# 掛け算と割り算を行う
-def evaluate_mul_div(tokens):
-    index = 0
+            
+#　トークン列の演算を行う関数     
+def evaluate(tokens):
 
-    while index < len(tokens):
-        if tokens[index]['type'] == 'NUMBER':
-            if tokens[index - 1]['type'] == 'MUL':
+    # 関数を計算する
+    def evaluate_functions(tokens):
 
-                # token[index]に結果を入れ、token[index - 2], token[index - 1]を削除する
-                # 削除するとindexが一つズレることに注意
-                tokens[index]['number'] = tokens[index]['number'] * tokens[index - 2]['number']
-                tokens.pop(index - 2)
-                tokens.pop(index - 2) # さっきまでのtokens[index - 1]はtokens[index - 2]に
-                index -= 2
+        index = 0
 
-            elif tokens[index - 1]['type'] == 'DIV':
+        while index < len(tokens):
+            if tokens[index]['type'] == 'FUNCTION':
 
-                # token[index]に結果を入れ、token[index - 2], token[index - 1]を削除する
-                # 削除するとindexが一つズレることに注意
-                tokens[index]['number'] = tokens[index - 2]['number'] / tokens[index]['number']
-                tokens.pop(index - 2)
-                tokens.pop(index - 2) # さっきまでのtokens[index - 1]はtokens[index - 2]に
-                index -= 2
-        index += 1
+                # 見つかった関数を計算
+                tokens, index = calculate_one_function(tokens, index)
+            
+            index += 1
+        
+
+
     
+    # 括弧の中身を計算する
+    def evaluate_brackets(tokens):
+
+        index = 0
+
+        while index < len(tokens):
+            if tokens[index]['type'] == 'BRACKETS_START':
+                
+                # 見つかった括弧の中身を計算
+                tokens, index = calculate_one_brackets(tokens, index)
+                
+            index += 1
+        
+
+    # 掛け算と割り算を行う
+    def evaluate_mul_div(tokens):
+        index = 0
+
+        while index < len(tokens):
+            if tokens[index]['type'] == 'NUMBER':
+                if tokens[index - 1]['type'] == 'MUL':
+
+                    # token[index]に結果を入れ、token[index - 2], token[index - 1]を削除する
+                    # 削除するとindexが一つズレることに注意
+                    tokens[index]['number'] = tokens[index]['number'] * tokens[index - 2]['number']
+                    tokens.pop(index - 2)
+                    tokens.pop(index - 2) # さっきまでのtokens[index - 1]はtokens[index - 2]に
+                    index -= 2
+
+                elif tokens[index - 1]['type'] == 'DIV':
+
+                    # token[index]に結果を入れ、token[index - 2], token[index - 1]を削除する
+                    # 削除するとindexが一つズレることに注意
+                    tokens[index]['number'] = tokens[index - 2]['number'] / tokens[index]['number']
+                    tokens.pop(index - 2)
+                    tokens.pop(index - 2) # さっきまでのtokens[index - 1]はtokens[index - 2]に
+                    index -= 2
+            index += 1
+        
+        
+
+    # 足し算と引き算を行い演算結果をかえす
+    def evaluate_plus_minus(tokens):
+        answer = 0
+        tokens.insert(0, {'type': 'PLUS'}) # Insert a dummy '+' token
+        index = 1
+
+        while index < len(tokens):
+            if tokens[index]['type'] == 'NUMBER':
+                if tokens[index - 1]['type'] == 'PLUS':
+                    answer += tokens[index]['number']
+                elif tokens[index - 1]['type'] == 'MINUS':
+                    answer -= tokens[index]['number']
+                else:
+                    print('Invalid syntax')
+                    exit(1)
+            index += 1
+        return answer
+
+    # メインのevaluate関数
+    # 括弧の中身　→ 掛け算割り算　→　足し算引き算　の順に計算する
+    def evaluate_main(tokens):
+
+        evaluate_functions(tokens)
+        evaluate_brackets(tokens)
+        evaluate_mul_div(tokens)
+        answer = evaluate_plus_minus(tokens)
+
+        return answer
     
+    return evaluate_main(tokens)
 
-# 足し算と引き算を行い演算結果をかえす
-def evaluate_plus_minus(tokens):
-    answer = 0
-    tokens.insert(0, {'type': 'PLUS'}) # Insert a dummy '+' token
-    index = 1
-
-    while index < len(tokens):
-        if tokens[index]['type'] == 'NUMBER':
-            if tokens[index - 1]['type'] == 'PLUS':
-                answer += tokens[index]['number']
-            elif tokens[index - 1]['type'] == 'MINUS':
-                answer -= tokens[index]['number']
-            else:
-                print('Invalid syntax')
-                exit(1)
-        index += 1
-    return answer
-
-# メインのevaluate関数
-# 括弧の中身　→ 掛け算割り算　→　足し算引き算　の順に計算する
-def evaluate_main(tokens):
-    evaluate_brackets(tokens)
-    evaluate_mul_div(tokens)
-    answer = evaluate_plus_minus(tokens)
-
-    return answer
 
 
 def test(line):
     line = line.replace(" ", "")
     tokens = tokenize(line)
-    actual_answer = evaluate_main(tokens)
+    actual_answer = evaluate(tokens)
     expected_answer = eval(line)
     if abs(actual_answer - expected_answer) < 1e-8:
         print("PASS! (%s = %f)" % (line, expected_answer))
@@ -244,14 +304,22 @@ def run_test():
 
     # 足し算引き算
     def plus_minus_test():
+        print("==== plus_minus_test started! ====")
+
         test("1+2")
         test("5-1")
         test("1555+904") # 複数桁の数も読めるか
         test("1.0+2.1-3") # 小数も読めるか
         test("3947-8.249")
 
+        print("==== plus_minus_test finished! ====")
+        print()
+        
+
     # 空白あり
     def mul_div_test():
+        print("==== mul_div_test started! ====")
+
         test("1 + 2")
         test("1.0 + 2.154 - 3")
 
@@ -266,8 +334,13 @@ def run_test():
         test("3 / 2 + 8 * 10 - 1")
         test("4397 + 809 / 3.0 * 0.1 - 32.214")
 
+        print("==== mul_div_test finished! ====")
+        print()
+
+
     def brackets_test():
         
+        print("==== brackets_test started! ====")
         
         test("(1 + 2)")
         test("2 * (3 + 5)")
@@ -285,15 +358,93 @@ def run_test():
         test("(2)")
         test("(4)/(5)")
 
-    
+        print("==== brackets_test finished! ====")
+        print()
+
+
+    def abs_test():
+
+        print("==== abs()_test started! ====")
+
+        test("abs(1)")
+        test("abs(-1)")
+        test("abs(1.5)")
+        test("abs(-32.489)")
+        test("abs(4.9) + 4")
+
+        test("abs(1 - 32 + 5)")
+        test("abs(3 + (3 + 3))")
+        test("abs(54 * (6 / 2.0) + 21 + (5 - 1.2))")
+        
+        test("5 + abs(-4.0)")
+        test("5 + 9 * abs(4.2)")
+        test("5 + (4 * abs(3 * (4.24 - 4) / abs(3 - 10.2)) - abs(7))")
+
+        print("==== abs()_test finished! ====")
+        print()
+
+
+    def int_test():
+
+        print("==== int()_test started! ====")
+
+
+        test("int(2.0)")
+        test("int(0.431)")
+        test("int(2 - 4.1)")
+        test("int(3 * 2.5)")
+
+        test("int(3 * (4 + 2.5432))")
+        test("int(3 / (2 + 13.32) * (324 - 32.13))")
+
+        test("4 + int(4.2)")
+        test("4 + 42 * int(0.24)")
+        test("42 + (34 * int(3.9) - int(123.43 / 4))")
+
+        test("int(abs(43 - 89.24))")
+        test("abs(int(53.2 - 689) * 4 / 9)")
+        test("abs(int(abs(3 - 9.6)))")
+
+        print("==== int()_test finished! ====")
+        print()
+
+
+    def round_test():
+
+        print("==== round()_test started! ====")
+
+        test("round(2.4)")
+        test("round(5.9)")
+        test("round(2 - 5.3)")
+
+        test("round(3 * (4 + 2.5432))")
+        test("round(3 / (2 + 13.32) * (324 - 32.13))")
+
+        test("4 + round(4.2)")
+        test("4 + 42 * round(0.24)")
+        test("42 + (34 * round(3.9) - round(123.43 / 4))")
+
+        test("int(round(43 - 89.24))")
+        test("abs(round(53.2 - 689) * 4 / 9)")
+
+        test("abs(round(int(3 - 9.6)))")
+        test("round(int(abs(int(round(3.532-6.342)))))")
+
+        print("==== round()_test finished! ====")
+        print()
+
 
 
     # テスト開始
     print("==== Test started! ====")
+    print()
     
-    # plus_minus_test()
-    # mul_div_test()
+    plus_minus_test()
+    mul_div_test()
     brackets_test()
+    abs_test()
+    int_test()
+    round_test()
 
     print("==== Test finished! ====\n")
 
@@ -303,5 +454,5 @@ while True:
     print('> ', end="")
     line = input().replace(" ", "") # 空白を除去
     tokens = tokenize(line)
-    answer = evaluate_main(tokens)
+    answer = evaluate(tokens)
     print("answer = %f\n" % answer)
