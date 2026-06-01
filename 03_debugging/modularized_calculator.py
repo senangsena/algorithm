@@ -123,8 +123,7 @@ def tokenize(line):
 
     return tokens
 
-# 括弧の中に入っているトークン列を返す関数
-# トークン全体と、開き括弧のindexを受け取り、その開き括弧に対応する閉じ括弧を探す
+# 括弧の中に入っているトークン列のみを新しいトークン列として返す関数
 def make_brackets_tokens(tokens, index):
     assert tokens[index]['type'] == 'BRACKETS_START'
 
@@ -167,6 +166,7 @@ def calculate_one_brackets(tokens, index):
     # indexの返り値は計算結果を指す
     return tokens, index
 
+# ある一つの関数のみ計算する関数
 def calculate_one_function(tokens, index):
     assert tokens[index]['type'] == 'FUNCTION'
     assert tokens[index + 1]['type'] == 'BRACKETS_START'
@@ -175,7 +175,7 @@ def calculate_one_function(tokens, index):
     # 関数の引数の中身を計算
     index += 1
     tokens, index = calculate_one_brackets(tokens, index)
-    assert tokens[index]['type'] == 'NUMBER' # indexの返り値は、計算結果を指すはず
+    assert tokens[index]['type'] == 'NUMBER' # indexの返り値は、計算結果を指す
 
     if function_type == 'ABS':
         tokens[index]['number'] = abs(tokens[index]['number'])
@@ -229,8 +229,6 @@ def evaluate(tokens):
             
             index += 1
         
-
-
     
     # 括弧の中身を計算する
     def evaluate_brackets(tokens):
@@ -259,7 +257,6 @@ def evaluate(tokens):
           
             index += 1
         
-        
 
     # 足し算と引き算を行い演算結果をかえす
     def evaluate_plus_minus(tokens):
@@ -280,7 +277,7 @@ def evaluate(tokens):
         return answer
 
     # メインのevaluate関数
-    # 括弧の中身　→ 掛け算割り算　→　足し算引き算　の順に計算する
+    # 関数の計算　→ 括弧の中身　→ 掛け算割り算　→　足し算引き算　の順に計算する
     def evaluate_main(tokens):
 
         evaluate_functions(tokens)
